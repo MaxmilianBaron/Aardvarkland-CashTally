@@ -1,0 +1,3 @@
+artifacts/ui/
+.playwright-mcp/
+node_modules/
