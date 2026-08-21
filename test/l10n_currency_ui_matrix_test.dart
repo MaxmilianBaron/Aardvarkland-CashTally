@@ -210,5 +210,8 @@ class _MemoryPreferenceService extends PreferenceService {
   }) async {}
 
   @override
+  Future<void> saveLocaleCode(String localeCode) async {}
+
+  @override
   Future<void> saveCurrencyCode(String currencyCode) async {}
 }
