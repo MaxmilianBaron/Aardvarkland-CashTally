@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b6e4f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Výčetka — UI prototyp</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --brand: #0b6e4f;
+      --brand-soft: #d8f2e6;
+      --surface: #ffffff;
+      --background: #f5f7f4;
+      --text: #17211d;
+      --muted: #5b6962;
+      --border: #dbe2de;
+      --danger: #9c2d20;
+      --radius: 20px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --brand: #55d6a4;
+        --brand-soft: #183f32;
+        --surface: #151a18;
+        --background: #0d100f;
+        --text: #eef5f1;
+        --muted: #acb9b2;
+        --border: #303a35;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--background);
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    button, input, select, textarea { font: inherit; }
+    .app { max-width: 760px; margin: 0 auto; min-height: 100vh; padding-bottom: 116px; }
+    header {
+      position: sticky; top: 0; z-index: 5;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: calc(14px + env(safe-area-inset-top)) 18px 14px;
+      background: color-mix(in srgb, var(--background) 90%, transparent);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--border);
+    }
+    h1 { font-size: 24px; margin: 0; }
+    .badge {
+      border-radius: 999px; padding: 7px 11px; font-size: 12px; font-weight: 800;
+      background: var(--brand-soft); color: var(--brand);
+    }
+    main { padding: 16px; }
+    .card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 16px; margin-bottom: 14px;
+    }
+    .trial { display: flex; gap: 12px; align-items: flex-start; }
+    .trial strong { display: block; margin-bottom: 4px; }
+    .muted { color: var(--muted); }
+    .currencies { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 10px; }
+    .currency {
+      flex: none; border: 1px solid var(--border); background: var(--surface); color: var(--text);
+      border-radius: 999px; padding: 10px 14px; font-weight: 750;
+    }
+    .currency.active { background: var(--brand); color: #fff; border-color: var(--brand); }
+    .scan {
+      width: 100%; border: 0; border-radius: 16px; padding: 15px; font-weight: 800;
+      background: var(--brand-soft); color: var(--brand); margin: 8px 0 22px;
+    }
+    h2 { font-size: 19px; margin: 20px 0 10px; }
+    .denom {
+      display: grid; grid-template-columns: minmax(74px, 1fr) auto auto auto minmax(90px, 1fr);
+      align-items: center; gap: 8px; padding: 11px 12px; margin-bottom: 8px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    }
+    .denom-label { font-weight: 800; }
+    .kind { display: block; color: var(--muted); font-size: 12px; font-weight: 500; }
+    .round {
+      width: 40px; height: 40px; border: 0; border-radius: 14px; font-size: 22px;
+      background: var(--brand-soft); color: var(--brand); font-weight: 700;
+    }
+    .qty {
+      min-width: 42px; border: 0; background: transparent; color: var(--text);
+      text-align: center; font-size: 18px; font-weight: 800; padding: 8px 2px;
+    }
+    .subtotal { text-align: right; font-weight: 750; font-variant-numeric: tabular-nums; }
+    label { display: block; margin: 10px 0 6px; font-weight: 700; }
+    input, textarea {
+      width: 100%; border: 1px solid var(--border); border-radius: 14px;
+      padding: 13px; background: var(--surface); color: var(--text);
+    }
+    .difference { display: flex; justify-content: space-between; gap: 12px; margin-top: 14px; font-weight: 800; }
+    .bottom {
+      position: fixed; z-index: 10; left: 50%; transform: translateX(-50%); bottom: 0;
+      width: min(760px, 100%); display: flex; align-items: center; gap: 16px;
+      padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+      background: var(--surface); border-top: 1px solid var(--border);
+      box-shadow: 0 -8px 30px rgba(0,0,0,.08);
+    }
+    .total { flex: 1; }
+    .total small { display: block; color: var(--muted); }
+    .total strong { font-size: 24px; font-variant-numeric: tabular-nums; }
+    .save {
+      border: 0; background: var(--brand); color: white; border-radius: 16px;
+      padding: 15px 21px; font-weight: 850;
+    }
+    dialog {
+      width: min(520px, calc(100% - 32px)); border: 1px solid var(--border); border-radius: 22px;
+      background: var(--surface); color: var(--text); padding: 22px;
+    }
+    dialog::backdrop { background: rgba(0,0,0,.55); }
+    dialog button { border: 0; border-radius: 14px; padding: 11px 15px; font-weight: 750; }
+    .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+    @media (max-width: 440px) {
+      .denom { grid-template-columns: 72px 36px 38px 36px 1fr; gap: 4px; padding: 9px 8px; }
+      .round { width: 36px; height: 36px; }
+      .subtotal { font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Výčetka</h1>
+      <span class="badge">FREE · UI PROTOTYP</span>
+    </header>
+    <main>
+      <section class="card trial">
+        <span aria-hidden="true">▣</span>
+        <div><strong>Free · všechny funkce</strong><span class="muted">Bez limitu OCR, historie a exportu · reklamy pouze na hlavních kartách · Ad-free jednorázově 4,99 €. Tento prohlížečový soubor ukazuje UI; produkční OCR je v mobilním Flutter buildu.</span></div>
+      </section>
+
+      <h2>Měna</h2>
+      <div class="currencies" id="currencies"></div>
+      <button class="scan" id="scan">▣ Naskenovat bankovku OCR</button>
+      <input id="imagePicker" type="file" accept="image/*" capture="environment" hidden>
+
+      <section id="denominations"></section>
+
+      <section class="card">
+        <h2 style="margin-top:0">Kontrola pokladny</h2>
+        <label for="expected">Očekávaný stav</label>
+        <input id="expected" inputmode="decimal" placeholder="např. 18370">
+        <label for="float">Ponechat v kase</label>
+        <input id="float" inputmode="decimal" placeholder="např. 3000">
+        <label for="note">Poznámka</label>
+        <textarea id="note" rows="3" placeholder="Směna, pokladna, důvod rozdílu…"></textarea>
+        <div class="difference"><span id="differenceLabel">Rozdíl</span><span id="difference">—</span></div>
+      </section>
+    </main>
+  </div>
+
+  <div class="bottom">
+    <div class="total"><small>Celkem</small><strong id="total">0</strong></div>
+    <button class="save" id="save">Uložit</button>
+  </div>
+
+  <dialog id="dialog">
+    <h2 id="dialogTitle" style="margin-top:0">Informace</h2>
+    <p id="dialogBody"></p>
+    <div class="dialog-actions"><button id="dialogClose">Rozumím</button></div>
+  </dialog>
+
+  <script>
+    const catalog = {
+      CZK: { name: 'Česká koruna', symbol: 'Kč', before: false,
+        notes: [100,200,500,1000,2000,5000], coins: [1,2,5,10,20,50] },
+      EUR: { name: 'Euro', symbol: '€', before: true,
+        notes: [5,10,20,50,100,200,500], coins: [.01,.02,.05,.10,.20,.50,1,2] },
+      USD: { name: 'Americký dolar', symbol: '$', before: true,
+        notes: [1,2,5,10,20,50,100], coins: [.01,.05,.10,.25,.50,1] },
+      GBP: { name: 'Britská libra', symbol: '£', before: true,
+        notes: [5,10,20,50,100], coins: [.01,.02,.05,.10,.20,.50,1,2] },
+      CHF: { name: 'Švýcarský frank', symbol: 'CHF ', before: true,
+        notes: [10,20,50,100,200,1000], coins: [.05,.10,.20,.50,1,2,5] },
+      CAD: { name: 'Kanadský dolar', symbol: 'C$', before: true,
+        notes: [5,10,20,50,100], coins: [.01,.05,.10,.25,.50,1,2] },
+      AUD: { name: 'Australský dolar', symbol: 'A$', before: true,
+        notes: [5,10,20,50,100], coins: [.05,.10,.20,.50,1,2] }
+    };
+
+    const state = { currency: 'CZK', quantities: {} };
+    const $ = id => document.getElementById(id);
+
+    function key(kind, value) { return `${kind}_${Math.round(value * 100)}`; }
+    function format(value) {
+      const c = catalog[state.currency];
+      const negative = value < 0;
+      const absolute = Math.abs(value);
+      const amount = new Intl.NumberFormat('cs-CZ', { minimumFractionDigits: absolute % 1 ? 2 : 0, maximumFractionDigits: 2 }).format(absolute);
+      const sign = negative ? '−' : '';
+      return c.before ? `${sign}${c.symbol}${amount}` : `${sign}${amount} ${c.symbol}`;
+    }
+    function label(value) {
+      if (value < 1) return `${Math.round(value * 100)} c`;
+      return format(value);
+    }
+    function quantity(kind, value) { return state.quantities[key(kind, value)] || 0; }
+    function setQuantity(kind, value, next) {
+      const k = key(kind, value);
+      if (next <= 0) delete state.quantities[k]; else state.quantities[k] = next;
+      renderDenominations(); updateTotals();
+    }
+    function total() {
+      let result = 0;
+      const c = catalog[state.currency];
+      for (const [kind, values] of [['note', c.notes], ['coin', c.coins]]) {
+        for (const value of values) result += value * quantity(kind, value);
+      }
+      return Math.round(result * 100) / 100;
+    }
+
+    function renderCurrencies() {
+      $('currencies').innerHTML = Object.entries(catalog).map(([code, currency]) =>
+        `<button class="currency ${code === state.currency ? 'active' : ''}" data-code="${code}" title="${currency.name}">${code}</button>`
+      ).join('');
+      document.querySelectorAll('.currency').forEach(button => button.onclick = () => {
+        if (button.dataset.code === state.currency) return;
+        state.currency = button.dataset.code;
+        state.quantities = {};
+        render();
+      });
+    }
+
+    function row(kind, value) {
+      const q = quantity(kind, value);
+      return `<div class="denom">
+        <div class="denom-label">${label(value)}<span class="kind">${kind === 'note' ? 'bankovka' : 'mince'}</span></div>
+        <button class="round" data-action="minus" data-kind="${kind}" data-value="${value}" aria-label="Odebrat">−</button>
+        <button class="qty" data-action="edit" data-kind="${kind}" data-value="${value}">${q}</button>
+        <button class="round" data-action="plus" data-kind="${kind}" data-value="${value}" aria-label="Přidat">+</button>
+        <div class="subtotal">${format(value * q)}</div>
+      </div>`;
+    }
+
+    function renderDenominations() {
+      const c = catalog[state.currency];
+      $('denominations').innerHTML = `<h2>Bankovky</h2>${[...c.notes].reverse().map(v => row('note', v)).join('')}
+        <h2>Mince</h2>${[...c.coins].reverse().map(v => row('coin', v)).join('')}`;
+      document.querySelectorAll('[data-action]').forEach(button => button.onclick = () => {
+        const kind = button.dataset.kind;
+        const value = Number(button.dataset.value);
+        const current = quantity(kind, value);
+        if (button.dataset.action === 'plus') setQuantity(kind, value, current + 1);
+        if (button.dataset.action === 'minus') setQuantity(kind, value, current - 1);
+        if (button.dataset.action === 'edit') {
+          const next = prompt(`Počet kusů ${label(value)}`, current);
+          if (next !== null && /^\d+$/.test(next.trim())) setQuantity(kind, value, Number(next));
+        }
+      });
+    }
+
+    function updateTotals() {
+      const current = total();
+      $('total').textContent = format(current);
+      const expected = Number(String($('expected').value).replace(',', '.'));
+      if ($('expected').value.trim() && Number.isFinite(expected)) {
+        const diff = Math.round((current - expected) * 100) / 100;
+        $('difference').textContent = format(diff);
+        $('differenceLabel').textContent = diff === 0 ? 'Pokladna sedí' : diff > 0 ? 'Přebývá' : 'Chybí';
+      } else {
+        $('difference').textContent = '—';
+        $('differenceLabel').textContent = 'Rozdíl';
+      }
+    }
+
+    function render() { renderCurrencies(); renderDenominations(); updateTotals(); }
+    function showDialog(title, body) {
+      $('dialogTitle').textContent = title; $('dialogBody').textContent = body; $('dialog').showModal();
+    }
+
+    $('expected').addEventListener('input', updateTotals);
+    $('scan').onclick = () => $('imagePicker').click();
+    $('imagePicker').onchange = async event => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      showDialog('OCR v mobilní aplikaci', `Snímek „${file.name}“ byl vybrán. Tento HTML soubor je pouze klikací UI prototyp. Nativní Flutter build zpracuje fotografii lokálně přes Apple Vision nebo Google ML Kit a nabídne nominál k potvrzení.`);
+      event.target.value = '';
+    };
+    $('save').onclick = () => {
+      const item = { at: new Date().toISOString(), currency: state.currency, quantities: state.quantities, total: total(), expected: $('expected').value, float: $('float').value, note: $('note').value };
+      const history = JSON.parse(localStorage.getItem('vycetka-prototype-history') || '[]');
+      history.unshift(item);
+      localStorage.setItem('vycetka-prototype-history', JSON.stringify(history.slice(0, 20)));
+      showDialog('Uloženo v prototypu', `Výčetka ${format(item.total)} byla uložena do localStorage tohoto prohlížeče.`);
+    };
+    $('dialogClose').onclick = () => $('dialog').close();
+    render();
+  </script>
+</body>
+</html>
