@@ -2,7 +2,7 @@
 
 Open-source offline cash counting and till-closing app for Android and iOS.
 
-[Live Demo](https://maxmilianbaron.github.io/Aardvarkland-CashTally/) · [Screenshots](#screenshots) · [Quick Start](#quick-start) · [Documentation](docs/) · [Releases](https://github.com/MaxmilianBaron/Aardvarkland-CashTally/releases)
+[Live Demo](https://maxmilianbaron.github.io/Aardvarkland-CashTally/) · [Quick Start](#quick-start) · [Documentation](docs/) · [Releases](https://github.com/MaxmilianBaron/Aardvarkland-CashTally/releases)
 
 ![MIT License](https://img.shields.io/badge/license-MIT-blue.svg) ![Flutter](https://img.shields.io/badge/Flutter-3.44-02569b.svg) ![Android](https://img.shields.io/badge/Android-API%2024%2B-3ddc84.svg)
 
@@ -30,12 +30,6 @@ CashTally is a Flutter application for denomination-based cash counting, profess
 - Optional device PIN/password/biometric app lock
 - Offline-first storage with explicit schema migrations
 - No advertising, subscriptions, or in-app purchases in the default public configuration
-
-## Screenshots
-
-| Currency selection | Professional count | Settings and themes |
-| --- | --- | --- |
-| ![CashTally currency selection](docs/images/cashtally-currencies.png) | ![CashTally professional count](docs/images/cashtally-count.png) | ![CashTally settings](docs/images/cashtally-settings.png) |
 
 ## Live Demo
 
