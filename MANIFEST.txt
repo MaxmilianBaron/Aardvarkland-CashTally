@@ -1,0 +1,30 @@
+Výčetka Flutter Alpha 0.4.0+19
+Aktualizováno: 2026-08-02
+Platformy: Android API 24+ / iOS 13+
+Package/bundle ID: cz.vycetka.vycetka
+Katalog: 32 měn / 201 bankovek / 191 mincí / 36 jazyků
+
+Plány jedné veřejné aplikace:
+  Free    = všechny funkce, reklamy pouze na hlavních kartách
+  Ad-free = stejné funkce bez reklam, 4,99 EUR jednorázově jako výchozí cena
+
+One-time non-consumable product ID: vycetka_full_unlock
+Retired migration-only ID: vycetka_ad_free_monthly
+QA override: FORCE_AD_FREE=true
+
+Aktuální zdroj obsahuje Android/iOS platformní obaly bez kamery/OCR/QR,
+UMP/AdMob integraci, store nákupní klient, profesionální uzávěrku,
+rychlé počítání, násobiče, šablony pokladen, vlastní a skryté nominály, filtry
+historie, šifrovanou zálohu, oblíbené měny, PDF/CSV, důkazní SHA-256,
+POS/EFTPOS import, systémový zámek, finální text s hlavičkou,
+testy a release dokumentaci.
+Všech 36 jazyků má všech 307 uživatelských textů bez runtime fallbacku.
+Hmotnosti bankovek používají pouze 32 oficiálně doložených nominálních hodnot;
+169 bankovek bez přijatelného zdroje je označeno jako nedostupných.
+Úplný seznam souborů se záměrně
+neduplikuje; autoritativní stav je pracovní strom a pubspec.lock.
+
+Alpha používá Google testovací reklamní ID. Nesmí být označena za veřejný
+store release. Jednorázový nákup používá klientské store ověření bez vlastního
+receipt serveru. Produkční bránu kontroluje
+scripts/verify_monetization_config.py a postup je v docs/MONETIZATION_SETUP.md.

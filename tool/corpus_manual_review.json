@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "reviewedOn": "2026-07-22",
+  "rejected": {
+    "CHF_2000": "cropped security-detail photograph, not a complete banknote",
+    "CHF_5000": "specimen image rather than an ordinary circulating banknote",
+    "KRW_50000": "specimen banknote with zero serial number",
+    "INR_50000": "specimen banknote"
+  }
+}

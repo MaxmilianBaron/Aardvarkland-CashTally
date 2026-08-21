@@ -1,0 +1,37 @@
+app_locale	play_locale	status	title
+cs	cs-CZ	localized	Výčetka – uzávěrka pokladny
+en	en-US	default	Cash Closing & Till Counter
+de	de-DE	localized	Kassenabschluss & Geldzähler
+fr	fr-FR	localized	Clôture & comptage de caisse
+it	it-IT	localized	Chiusura e conteggio cassa
+nl	nl-NL	localized	Kasafsluiting & geld tellen
+bg	bg	localized	Касово приключване и брояч
+hr	hr	localized	Obračun i brojanje blagajne
+el	el-GR	localized	Κλείσιμο & μέτρηση ταμείου
+et	et	localized	Kassa sulgemine ja loendur
+fi	fi-FI	localized	Kassan sulku ja rahalaskuri
+lv	lv	localized	Kases slēgšana un skaitīšana
+lt	lt	localized	Kasos uždarymas ir apskaita
+lb	-	english_fallback	Cash Closing & Till Counter
+mt	-	english_fallback	Cash Closing & Till Counter
+pt	pt-PT	localized	Fecho e contagem de caixa
+sk	sk	localized	Výčetka – uzávierka pokladne
+sl	sl	localized	Zaključek in štetje blagajne
+es	es-ES	localized	Cierre y conteo de caja
+sv	sv-SE	localized	Kassaavslut & kontanträknare
+nb	no-NO	localized	Kasseoppgjør og kontantteller
+uk	uk	localized	Закриття каси та підрахунок
+ru	ru-RU	localized	Закрытие кассы и подсчёт
+da	da-DK	localized	Kasseafslutning og optælling
+hu	hu-HU	localized	Kasszazárás és pénzszámláló
+pl	pl-PL	localized	Zamknięcie kasy i licznik
+tr	tr-TR	localized	Kasa kapanışı ve para sayacı
+id	id	localized	Tutup kas & penghitung uang
+hi	hi-IN	localized	कैश क्लोज़िंग और गिनती
+ms	ms-MY	localized	Penutupan & kiraan tunai
+th	th	localized	ปิดยอดและนับเงินสด
+ur	ur	localized	کیش بندش اور رقم شمار
+ar	ar	localized	إغلاق الصندوق وعدّ النقد
+he	iw-IL	localized	סגירת קופה וספירת מזומן
+ja	ja-JP	localized	レジ締め・現金カウンター
+ko	ko-KR	localized	금고 마감 및 현금 계산기
