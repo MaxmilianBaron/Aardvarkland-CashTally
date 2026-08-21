@@ -10,4 +10,4 @@ Thank you for helping improve Aardvarkland CashTally.
 
 Before submitting a pull request, run `python scripts/verify_source.py`, `python scripts/test_native_patcher.py`, `flutter analyze`, and `flutter test`. Preserve integer minor-unit money calculations and add migrations for persisted schema changes.
 
-Do not include signing material, credentials, store keys, real till records, signatures, business identities, backups, or personal data. Use fictional sample data. State separately what was source-tested, built, and verified on physical Android or iOS hardware.
+Do not include signing material, credentials, store keys, real till records, signatures, business identities, backups, personal data, or screenshots captured from personal devices. Use fictional sample data. State separately what was source-tested, built, and verified on physical Android or iOS hardware.
