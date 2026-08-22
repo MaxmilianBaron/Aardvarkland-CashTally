@@ -1,0 +1,10 @@
+{
+  "name": "Aardvarkland Cash Tally",
+  "short_name": "Aardvarkland Cash Tally",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f7f8f6",
+  "theme_color": "#0b6e4f",
+  "description": "Aardvarkland Cash Tally interactive mobile preview"
+}

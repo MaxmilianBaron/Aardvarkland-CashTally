@@ -1,0 +1,33 @@
+name: Demo UI
+
+on:
+  pull_request:
+    paths: ['preview/**', '.github/workflows/demo-ui.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24.15.0
+      - run: npm install --no-save --package-lock=false @playwright/test@1.55.0
+      - run: npx playwright install --with-deps chromium
+      - name: Start demo
+        run: |
+          python3 -m http.server 4173 --directory preview --bind 127.0.0.1 > /tmp/cashtally-demo.log 2>&1 &
+          for attempt in {1..30}; do
+            curl --fail --silent http://127.0.0.1:4173/ > /dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/cashtally-demo.log
+          exit 1
+      - name: Run UI tests
+        env:
+          PREVIEW_URL: http://127.0.0.1:4173/
+        run: npx playwright test preview/e2e/preview.spec.mjs --workers=1 --reporter=line
