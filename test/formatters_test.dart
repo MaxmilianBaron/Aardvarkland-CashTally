@@ -17,6 +17,21 @@ void main() {
     expect(AppFormatters.parseMoneyToMinor('-0.50'), -50);
   });
 
+  test('rejects malformed monetary strings instead of repairing them silently', () {
+    expect(AppFormatters.parseMoneyToMinor('1e3'), isNull);
+    expect(AppFormatters.parseMoneyToMinor('12-34'), isNull);
+    expect(AppFormatters.parseMoneyToMinor('100.00', fractionDigits: 0), isNull);
+    expect(AppFormatters.parseMoneyToMinor('1,23,4'), isNull);
+    expect(AppFormatters.parseMoneyToMinor('12Kč34'), isNull);
+  });
+
+  test('retains the supported currency and grouping formats', () {
+    expect(AppFormatters.parseMoneyToMinor('1.234,56 Kč'), 123456);
+    expect(AppFormatters.parseMoneyToMinor(r'$1,234.56'), 123456);
+    expect(AppFormatters.parseMoneyToMinor('1,000', fractionDigits: 0), 1000);
+    expect(AppFormatters.parseMoneyToMinor('0.125', fractionDigits: 3), 125);
+  });
+
   test('money input formatting keeps a negative sub-unit sign', () {
     expect(AppFormatters.moneyInputFromMinor(-50), '-0.50');
     expect(AppFormatters.moneyInputFromMinor(-150), '-1.50');

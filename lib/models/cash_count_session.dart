@@ -100,6 +100,11 @@ class CashCountSession {
     final rawQuantities =
         json['quantities'] as Map<String, Object?>? ??
         const <String, Object?>{};
+    for (final value in rawQuantities.values) {
+      if (value is! int || value < 0 || value > 100000000) {
+        throw const FormatException('Invalid denomination count');
+      }
+    }
     return CashCountSession(
       id: json['id']! as String,
       currencyCode: json['currencyCode']! as String,
@@ -107,7 +112,7 @@ class CashCountSession {
       updatedAt: DateTime.parse(json['updatedAt']! as String),
       documentNumber: json['documentNumber'] as String?,
       quantities: rawQuantities.map(
-        (key, value) => MapEntry(key, (value as num).toInt()),
+        (key, value) => MapEntry(key, value as int),
       ),
       expectedMinorUnits: (json['expectedMinorUnits'] as num?)?.toInt(),
       floatMinorUnits: (json['floatMinorUnits'] as num?)?.toInt(),

@@ -97,6 +97,44 @@ void main() {
     );
   });
 
+  test('corrupt history without a valid backup requires recovery', () async {
+    final directory = await Directory.systemTemp.createTemp('vycetka-corrupt-');
+    addTearDown(() async { if (await directory.exists()) await directory.delete(recursive: true); });
+    final current = File('${directory.path}/${LocalStore.sessionsFileName}');
+    await current.writeAsString('{broken');
+    final store = LocalStore(documentsDirectoryProvider: () async => directory);
+    await expectLater(store.loadSessions(), throwsA(isA<StateError>()));
+    expect(await current.exists(), isTrue);
+    expect(directory.listSync().whereType<File>().any(
+      (file) => file.path.contains('.corrupt-'),
+    ), isTrue);
+  });
+
+  test('a successful save retains the previous complete version as backup', () async {
+    final directory = await Directory.systemTemp.createTemp('vycetka-backup-retain-');
+    addTearDown(() async { if (await directory.exists()) await directory.delete(recursive: true); });
+    final store = LocalStore(documentsDirectoryProvider: () async => directory);
+    await store.saveSessions([]);
+    final current = File('${directory.path}/${LocalStore.sessionsFileName}');
+    await store.saveSessions([]);
+    expect(await File('${current.path}.bak').exists(), isTrue);
+  });
+
+  test('pending import journal is durable and can be replayed after restart', () async {
+    final directory = await Directory.systemTemp.createTemp('vycetka-import-journal-');
+    addTearDown(() async { if (await directory.exists()) await directory.delete(recursive: true); });
+    final first = LocalStore(documentsDirectoryProvider: () async => directory);
+    final payload = <String, Object?>{
+      'schemaVersion': 1, 'sessions': <Object?>[], 'templates': <Object?>[],
+      'customDenominations': <Object?>[], 'hiddenDenominationIds': <String, Object?>{},
+    };
+    await first.writeImportJournal(payload);
+    final reopened = LocalStore(documentsDirectoryProvider: () async => directory);
+    expect(await reopened.readImportJournal(), payload);
+    await reopened.clearImportJournal();
+    expect(await reopened.readImportJournal(), isNull);
+  });
+
   test('v4 sessions migrate to v5 and drop obsolete OCR counters', () async {
     final directory = await Directory.systemTemp.createTemp(
       'vycetka-local-store-v4-',

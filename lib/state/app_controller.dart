@@ -13,6 +13,7 @@ import '../models/custom_denomination.dart';
 import '../models/currency_definition.dart';
 import '../models/till_template.dart';
 import '../services/ad_service.dart';
+import '../services/backup_service.dart';
 import '../services/app_lock_service.dart';
 import '../services/entitlement_service.dart';
 import '../services/local_store.dart';
@@ -48,6 +49,31 @@ class AppController extends ChangeNotifier {
   late final PurchaseService purchaseService;
 
   final List<CashCountSession> _sessions = <CashCountSession>[];
+  Future<void> _sessionMutationTail = Future<void>.value();
+
+  Future<T> _serializeSessionMutation<T>(Future<T> Function() action) {
+    final operation = _sessionMutationTail.then((_) => action());
+    _sessionMutationTail = operation.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {},
+    );
+    return operation;
+  }
+
+  Future<void> _applyImportSnapshot(BackupBundle bundle) async {
+    await _localStore.saveSessions(bundle.sessions);
+    await _preferenceService.saveTillTemplates(bundle.templates);
+    await _preferenceService.saveCustomDenominations(bundle.customDenominations);
+    await _preferenceService.saveHiddenDenominationIds(bundle.hiddenDenominationIds);
+  }
+
+  Future<void> _resumePendingImport() async {
+    final raw = await _localStore.readImportJournal();
+    if (raw == null) return;
+    final snapshot = BackupBundle.fromJson(raw);
+    await _applyImportSnapshot(snapshot);
+    await _localStore.clearImportJournal();
+  }
   bool _loading = true;
   String? _errorMessage;
   String _selectedCurrencyCode = 'CZK';
@@ -103,6 +129,7 @@ class AppController extends ChangeNotifier {
 
   Future<void> initialize() async {
     try {
+      await _resumePendingImport();
       await entitlementService.initialize();
       _selectedCountryId = await _preferenceService.loadCountryId();
       final storedLocale = await _preferenceService.loadLocaleCode();
@@ -346,7 +373,8 @@ class AppController extends ChangeNotifier {
     required List<TillTemplate> templates,
     required List<CustomDenomination> customDenominations,
     required Map<String, Set<String>> hiddenDenominationIds,
-  }) async {
+  }) => _serializeSessionMutation(() async {
+    if (_errorMessage != null) throw StateError('CASH_TALLY_RECOVERY_REQUIRED');
     final bySessionId = <String, CashCountSession>{
       for (final item in _sessions) item.id: item,
     };
@@ -358,7 +386,6 @@ class AppController extends ChangeNotifier {
     }
     final mergedSessions = bySessionId.values.toList(growable: false)
       ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-
     final byTemplateId = <String, TillTemplate>{
       for (final item in _tillTemplates) item.id: item,
       for (final item in templates) item.id: item,
@@ -375,38 +402,37 @@ class AppController extends ChangeNotifier {
       mergedHidden.putIfAbsent(entry.key, () => <String>{}).addAll(entry.value);
     }
 
-    await _localStore.saveSessions(mergedSessions);
-    await _preferenceService.saveTillTemplates(
-      byTemplateId.values.toList(growable: false),
+    final target = BackupBundle(
+      sessions: mergedSessions,
+      templates: byTemplateId.values.toList(growable: false),
+      customDenominations: byCustomId.values.toList(growable: false),
+      hiddenDenominationIds: mergedHidden,
     );
-    await _preferenceService.saveCustomDenominations(
-      byCustomId.values.toList(growable: false),
-    );
-    await _preferenceService.saveHiddenDenominationIds(mergedHidden);
+    // The journal is made durable before *any* of the four underlying writes.
+    // Interrupted imports are completed on startup, never silently half-read.
+    await _localStore.writeImportJournal(target.toJson());
+    try {
+      await _applyImportSnapshot(target);
+      await _localStore.clearImportJournal();
+    } on Object {
+      _errorMessage = 'CASH_TALLY_RECOVERY_REQUIRED';
+      notifyListeners();
+      rethrow;
+    }
 
-    _sessions
-      ..clear()
-      ..addAll(mergedSessions);
-    _tillTemplates
-      ..clear()
-      ..addAll(byTemplateId.values);
-    _customDenominations
-      ..clear()
-      ..addAll(byCustomId.values);
-    _hiddenDenominationIds
-      ..clear()
-      ..addAll(mergedHidden);
+    _sessions..clear()..addAll(mergedSessions);
+    _tillTemplates..clear()..addAll(target.templates);
+    _customDenominations..clear()..addAll(target.customDenominations);
+    _hiddenDenominationIds..clear()..addAll(mergedHidden);
     notifyListeners();
-  }
+  });
 
   bool canCreateSavedSession() => true;
 
-  Future<bool> saveSession(CashCountSession session) async {
+  Future<bool> saveSession(CashCountSession session) => _serializeSessionMutation(() async {
+    if (_errorMessage != null) throw StateError('CASH_TALLY_RECOVERY_REQUIRED');
     final existingIndex = _sessions.indexWhere((item) => item.id == session.id);
-    if (existingIndex < 0 && !canCreateSavedSession()) {
-      return false;
-    }
-
+    if (existingIndex < 0 && !canCreateSavedSession()) return false;
     final nextSessions = List<CashCountSession>.from(_sessions);
     if (existingIndex >= 0) {
       nextSessions[existingIndex] = session;
@@ -414,29 +440,21 @@ class AppController extends ChangeNotifier {
       nextSessions.add(session);
     }
     nextSessions.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-
-    // Commit the in-memory state only after the durable write succeeds.
     await _localStore.saveSessions(nextSessions);
-    _sessions
-      ..clear()
-      ..addAll(nextSessions);
+    _sessions..clear()..addAll(nextSessions);
     notifyListeners();
     return true;
-  }
+  });
 
-  Future<void> deleteSession(String id) async {
+  Future<void> deleteSession(String id) => _serializeSessionMutation(() async {
+    if (_errorMessage != null) throw StateError('CASH_TALLY_RECOVERY_REQUIRED');
     final nextSessions = List<CashCountSession>.from(_sessions)
       ..removeWhere((session) => session.id == id);
-    if (nextSessions.length == _sessions.length) {
-      return;
-    }
-
+    if (nextSessions.length == _sessions.length) return;
     await _localStore.saveSessions(nextSessions);
-    _sessions
-      ..clear()
-      ..addAll(nextSessions);
+    _sessions..clear()..addAll(nextSessions);
     notifyListeners();
-  }
+  });
 
   void clearError() {
     _errorMessage = null;

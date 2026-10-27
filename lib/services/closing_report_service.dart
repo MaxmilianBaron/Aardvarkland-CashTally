@@ -14,6 +14,26 @@ import 'closing_proof_service.dart';
 class ClosingReportService {
   const ClosingReportService();
 
+  static Future<_CachedClosingAssets>? _cachedAssets;
+
+  static Future<_CachedClosingAssets> _loadAssets() async {
+    final regular = pw.Font.ttf(await rootBundle.load('assets/fonts/NotoSans-Regular.ttf'));
+    final bold = pw.Font.ttf(await rootBundle.load('assets/fonts/NotoSans-Bold.ttf'));
+    final fallbacks = <pw.Font>[
+      pw.Font.ttf(await rootBundle.load('assets/fonts/NotoSansArabic-Regular.ttf')),
+      pw.Font.ttf(await rootBundle.load('assets/fonts/NotoSansHebrew-Regular.ttf')),
+      pw.Font.ttf(await rootBundle.load('assets/fonts/NotoSansDevanagari-Regular.ttf')),
+      pw.Font.ttf(await rootBundle.load('assets/fonts/NotoSansThai-Regular.ttf')),
+      pw.Font.ttf(await rootBundle.load('assets/fonts/NotoSansJP-Variable.ttf')),
+      pw.Font.ttf(await rootBundle.load('assets/fonts/NotoSansKR-Variable.ttf')),
+    ];
+    final data = await rootBundle.load('assets/branding/aardvarkland_logo.png');
+    return _CachedClosingAssets(
+      regular, bold, List<pw.Font>.unmodifiable(fallbacks),
+      pw.MemoryImage(data.buffer.asUint8List()),
+    );
+  }
+
   static String fileStem(CashCountSession session) {
     final safeNumber = session.documentNumber.replaceAll(
       RegExp(r'[^A-Za-z0-9_-]'),
@@ -30,39 +50,12 @@ class ClosingReportService {
     final localeCode = locale.toLanguageTag();
     final languageCode = locale.languageCode;
     final l10n = AppLocalizations(locale);
-    final regular = pw.Font.ttf(
-      await rootBundle.load('assets/fonts/NotoSans-Regular.ttf'),
-    );
-    final bold = pw.Font.ttf(
-      await rootBundle.load('assets/fonts/NotoSans-Bold.ttf'),
-    );
-    final fallbacks = <pw.Font>[
-      pw.Font.ttf(
-        await rootBundle.load('assets/fonts/NotoSansArabic-Regular.ttf'),
-      ),
-      pw.Font.ttf(
-        await rootBundle.load('assets/fonts/NotoSansHebrew-Regular.ttf'),
-      ),
-      pw.Font.ttf(
-        await rootBundle.load('assets/fonts/NotoSansDevanagari-Regular.ttf'),
-      ),
-      pw.Font.ttf(
-        await rootBundle.load('assets/fonts/NotoSansThai-Regular.ttf'),
-      ),
-      pw.Font.ttf(
-        await rootBundle.load('assets/fonts/NotoSansJP-Variable.ttf'),
-      ),
-      pw.Font.ttf(
-        await rootBundle.load('assets/fonts/NotoSansKR-Variable.ttf'),
-      ),
-    ];
-    final theme = pw.ThemeData.withFont(
-      base: regular,
-      bold: bold,
-      fontFallback: fallbacks,
-    );
-    final logoData = await rootBundle.load('assets/branding/aardvarkland_logo.png');
-    final logo = pw.MemoryImage(logoData.buffer.asUint8List());
+    final assets = await (_cachedAssets ??= _loadAssets());
+    final regular = assets.regular;
+    final bold = assets.bold;
+    final fallbacks = assets.fallbacks;
+    final theme = pw.ThemeData.withFont(base: regular, bold: bold, fontFallback: fallbacks);
+    final logo = assets.logo;
     final rtl = const <String>{'ar', 'he', 'ur'}.contains(languageCode);
     final direction = rtl ? pw.TextDirection.rtl : pw.TextDirection.ltr;
     final total = session.totalMinorUnits(currency);
@@ -842,4 +835,12 @@ class ClosingReportService {
       ],
     );
   }
+}
+
+class _CachedClosingAssets {
+  const _CachedClosingAssets(this.regular, this.bold, this.fallbacks, this.logo);
+  final pw.Font regular;
+  final pw.Font bold;
+  final List<pw.Font> fallbacks;
+  final pw.MemoryImage logo;
 }

@@ -24,62 +24,65 @@ abstract final class AppFormatters {
   /// A single separator followed by three or more digits is treated as a
   /// thousands separator, so `1.234` becomes 1234 rather than 1.234.
   static int? parseMoneyToMinor(String input, {int fractionDigits = 2}) {
-    var source = input
-        .trim()
-        .replaceAll(RegExp(r'[\s\u00A0]'), '')
-        .replaceAll(RegExp(r'[^0-9,\.\-]'), '');
-    if (source.isEmpty || source == '-') {
-      return null;
-    }
+    if (fractionDigits < 0 || fractionDigits > 3) return null;
+    var source = input.trim().replaceAll(RegExp(r'[\u00A0\u202F]'), ' ');
+    // Currency markers are permitted only as a prefix or a suffix.
+    source = source.replaceFirst(
+      RegExp(r'^(?:[A-Za-z]{3}|Kč|[$€£¥₹₽₴₩])\s*', caseSensitive: false), '',
+    );
+    source = source.replaceFirst(
+      RegExp(r'\s*(?:[A-Za-z]{3}|Kč|[$€£¥₹₽₴₩])$', caseSensitive: false), '',
+    ).trim();
+    if (!RegExp(r'^-?[0-9][0-9 ,.]*$').hasMatch(source)) return null;
 
     final negative = source.startsWith('-');
-    source = source.replaceAll('-', '');
-    if (source.isEmpty || !RegExp(r'\d').hasMatch(source)) {
-      return null;
+    if (negative) source = source.substring(1);
+    final comma = source.lastIndexOf(',');
+    final dot = source.lastIndexOf('.');
+    final last = comma > dot ? comma : dot;
+    final trailing = last < 0 ? '' : source.substring(last + 1);
+    final separatorCount = RegExp(r'[,.]').allMatches(source).length;
+    int decimalIndex = -1;
+    if (last >= 0 && fractionDigits > 0 && trailing.isNotEmpty
+        && trailing.length <= fractionDigits) {
+      final hasBoth = comma >= 0 && dot >= 0;
+      // A single .xxx/,xxx is a thousands group for 2-decimal currencies.
+      // In 3-decimal currencies, 0.xxx is unambiguously fractional;
+      // other single 3-digit groups remain grouped for compatibility.
+      final groupedTriple = separatorCount == 1 && trailing.length == 3
+          && source.substring(0, last) != '0';
+      if (hasBoth || !groupedTriple) decimalIndex = last;
     }
 
-    final lastComma = source.lastIndexOf(',');
-    final lastDot = source.lastIndexOf('.');
-    final possibleDecimalIndex = lastComma > lastDot ? lastComma : lastDot;
-    final digitsAfterSeparator = possibleDecimalIndex < 0
-        ? -1
-        : source.length - possibleDecimalIndex - 1;
-    final hasDecimalSeparator =
-        fractionDigits > 0 &&
-        possibleDecimalIndex >= 0 &&
-        digitsAfterSeparator <= fractionDigits;
+    final wholeSource = decimalIndex >= 0 ? source.substring(0, decimalIndex) : source;
+    final fractionSource = decimalIndex >= 0 ? source.substring(decimalIndex + 1) : '';
+    if (fractionSource.length > fractionDigits) return null;
+    if (decimalIndex >= 0 && !RegExp(r'^[0-9]+$').hasMatch(fractionSource)) return null;
 
-    String wholeSource;
-    String fractionSource;
-    if (hasDecimalSeparator) {
-      wholeSource = source.substring(0, possibleDecimalIndex);
-      fractionSource = source.substring(possibleDecimalIndex + 1);
+    String wholeDigits;
+    if (RegExp(r'^[0-9]+$').hasMatch(wholeSource)) {
+      wholeDigits = wholeSource;
     } else {
-      wholeSource = source;
-      fractionSource = '';
+      final groups = wholeSource.split(RegExp(r'[ ,.]+'));
+      if (groups.length < 2 || !RegExp(r'^[0-9]{1,3}$').hasMatch(groups.first)
+          || groups.skip(1).any((group) => !RegExp(r'^[0-9]{3}$').hasMatch(group))) {
+        return null;
+      }
+      wholeDigits = groups.join();
     }
-
-    final wholeDigits = wholeSource.replaceAll(RegExp(r'[^0-9]'), '');
-    final parsedFractionDigits = fractionSource.replaceAll(
-      RegExp(r'[^0-9]'),
-      '',
-    );
-    if (wholeDigits.isEmpty && parsedFractionDigits.isEmpty) {
-      return null;
-    }
-
-    final whole = int.tryParse(wholeDigits.isEmpty ? '0' : wholeDigits);
-    final parsedFraction =
-        int.tryParse(parsedFractionDigits.padRight(fractionDigits, '0')) ?? 0;
-    if (whole == null) {
-      return null;
-    }
-
+    final whole = int.tryParse(wholeDigits);
+    if (whole == null) return null;
     var scale = 1;
     for (var index = 0; index < fractionDigits; index += 1) {
       scale *= 10;
     }
-    final minorUnits = whole * scale + parsedFraction;
+    const maxMinorUnits = 9000000000000000;
+    if (whole > maxMinorUnits ~/ scale) return null;
+    final paddedFraction = fractionSource.padRight(fractionDigits, '0');
+    final fraction = paddedFraction.isEmpty ? 0 : int.tryParse(paddedFraction);
+    if (fraction == null) return null;
+    final minorUnits = whole * scale + fraction;
+    if (minorUnits > maxMinorUnits) return null;
     return negative ? -minorUnits : minorUnits;
   }
 

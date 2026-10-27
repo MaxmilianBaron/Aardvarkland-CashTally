@@ -38,14 +38,30 @@ class VycetkaApp extends StatelessWidget {
               GlobalWidgetsLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,
             ],
-            home: AppLockGate(
+            // builder wraps Navigator as well as every pushed route and dialog.
+            builder: (context, child) => AppLockGate(
               controller: controller,
-              child: controller.loading
-                  ? const _LoadingScreen()
-                  : controller.countryConfirmedForRun
-                  ? const AppShell()
-                  : const CountrySelectionScreen(),
+              child: child ?? const SizedBox.shrink(),
             ),
+            home: controller.loading
+                ? const _LoadingScreen()
+                : controller.errorMessage != null
+                ? Scaffold(
+                    body: SafeArea(
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: SelectableText(
+                            controller.errorMessage!,
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
+                : controller.countryConfirmedForRun
+                ? const AppShell()
+                : const CountrySelectionScreen(),
           );
         },
       ),

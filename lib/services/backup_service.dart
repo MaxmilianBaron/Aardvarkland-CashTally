@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:cryptography/cryptography.dart';
 
 import '../models/cash_count_session.dart';
+import '../data/currency_catalog.dart';
 import '../models/custom_denomination.dart';
 import '../models/till_template.dart';
 
@@ -17,15 +18,29 @@ class BackupBundle {
   });
 
   factory BackupBundle.fromJson(Map<String, Object?> json) {
+    final rawSessions = json['sessions'] as List<Object?>? ?? const <Object?>[];
+    if (rawSessions.length > 10000) throw const FormatException('Backup has too many sessions');
     Map<String, Object?> stringMap(Object? source) =>
         (source! as Map<Object?, Object?>).map(
           (key, value) => MapEntry(key! as String, value),
         );
 
+    final sessions = rawSessions.map(
+      (item) => CashCountSession.fromJson(stringMap(item)),
+    ).toList(growable: false);
+    for (final session in sessions) {
+      if (!CurrencyCatalog.containsCode(session.currencyCode)) {
+        throw const FormatException('Unknown backup currency');
+      }
+      final currency = session.currencyFor(CurrencyCatalog.byCode(session.currencyCode));
+      for (final id in session.quantities.keys) {
+        if (currency.denominationById(id) == null) {
+          throw const FormatException('Unknown backup denomination');
+        }
+      }
+    }
     return BackupBundle(
-      sessions: (json['sessions'] as List<Object?>? ?? const <Object?>[])
-          .map((item) => CashCountSession.fromJson(stringMap(item)))
-          .toList(growable: false),
+      sessions: sessions,
       templates: (json['templates'] as List<Object?>? ?? const <Object?>[])
           .map((item) => TillTemplate.fromJson(stringMap(item)))
           .toList(growable: false),
@@ -107,6 +122,9 @@ class BackupService {
     required List<int> bytes,
     required String password,
   }) async {
+    if (bytes.length > 64 * 1024 * 1024) {
+      throw const FormatException('Backup file is too large');
+    }
     final envelope = jsonDecode(utf8.decode(bytes)) as Map<String, Object?>;
     if (envelope['format'] != 'vycetka-encrypted-backup' ||
         envelope['version'] != 1) {

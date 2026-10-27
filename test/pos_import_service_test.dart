@@ -38,6 +38,30 @@ void main() {
     expect(report.tillName, 'Front, till');
   });
 
+  test('rejects multiple POS rows rather than blending currencies and till amounts', () {
+    final rows = utf8.encode(
+      'currency;expected_cash;till\n'
+      'CZK;100,00;A\n'
+      'EUR;;B\n',
+    );
+    expect(
+      () => service.parse(bytes: rows, sourceFileName: 'multi.csv'),
+      throwsA(isA<PosImportException>().having(
+        (error) => error.code, 'code', 'ambiguousRows',
+      )),
+    );
+  });
+
+  test('rejects malformed expected amounts before reconciliation', () {
+    final rows = utf8.encode('currency;expected_cash\nCZK;1e3\n');
+    expect(
+      () => service.parse(bytes: rows, sourceFileName: 'malformed.csv'),
+      throwsA(isA<PosImportException>().having(
+        (error) => error.code, 'code', 'amountInvalid',
+      )),
+    );
+  });
+
   test('rejects a POS export without explicit expected cash', () {
     final source = utf8.encode('currency;total_sales\nCZK;100,00\n');
 

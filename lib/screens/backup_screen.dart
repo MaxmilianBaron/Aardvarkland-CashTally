@@ -142,8 +142,12 @@ class _BackupScreenState extends State<BackupScreen> {
     }
     setState(() => _busy = true);
     try {
+      final file = File(path);
+      if (await file.length() > 64 * 1024 * 1024) {
+        throw const FormatException('Backup file is too large');
+      }
       final bundle = await _service.decrypt(
-        bytes: await File(path).readAsBytes(),
+        bytes: await file.readAsBytes(),
         password: password,
       );
       if (!mounted) {

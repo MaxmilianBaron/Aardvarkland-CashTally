@@ -210,31 +210,31 @@ class PosImportService {
     if (firstLooksLikeKeyValue) {
       for (final row in rows) {
         if (row.length >= 2 && row.first.trim().isNotEmpty) {
-          values[_normalize(row.first)] = row.sublist(1).join(' ').trim();
+          final key = _normalize(row.first);
+          final value = row.sublist(1).join(' ').trim();
+          if (values.containsKey(key) && values[key] != value) {
+            throw const PosImportException('ambiguousRows');
+          }
+          values[key] = value;
         }
       }
       return values;
     }
 
     final headers = first.map(_normalize).toList(growable: false);
-    for (final row in rows.skip(1)) {
-      if (row.isEmpty) {
-        continue;
-      }
-      for (
-        var index = 0;
-        index < headers.length && index < row.length;
-        index += 1
-      ) {
-        final value = row[index].trim();
-        if (value.isNotEmpty) {
-          final key = headers[index];
-          // A POS report should contain one summary row. If an export has
-          // several rows, keep the last non-empty value and require the user
-          // to import a summary export rather than guessing at a total.
-          values[key] = value;
-        }
-      }
+    if (headers.toSet().length != headers.length) {
+      throw const PosImportException('ambiguousRows');
+    }
+    final dataRows = rows.skip(1).where(
+      (row) => row.any((cell) => cell.trim().isNotEmpty),
+    ).toList(growable: false);
+    if (dataRows.length != 1) {
+      throw const PosImportException('ambiguousRows');
+    }
+    final row = dataRows.single;
+    for (var index = 0; index < headers.length && index < row.length; index += 1) {
+      final value = row[index].trim();
+      if (value.isNotEmpty) values[headers[index]] = value;
     }
     return values;
   }

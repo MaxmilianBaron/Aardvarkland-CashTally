@@ -128,8 +128,9 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
     return Stack(
       fit: StackFit.expand,
       children: <Widget>[
-        widget.child,
-        Material(
+        ExcludeFocus(excluding: _locked, child: ExcludeSemantics(excluding: _locked, child: widget.child)),
+        BlockSemantics(
+          child: Material(
           color: Theme.of(context).colorScheme.surface,
           child: SafeArea(
             child: Center(
@@ -180,6 +181,7 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
               ),
             ),
           ),
+        ),
         ),
       ],
     );
