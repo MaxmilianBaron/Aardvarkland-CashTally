@@ -30,7 +30,7 @@ jobs:
           cp preview/index.html preview/preview.css _site/
           cp -R preview/app _site/app
           touch _site/.nojekyll
-      - uses: actions/upload-pages-artifact@v4
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: _site
       - id: deployment
