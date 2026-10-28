@@ -38,6 +38,11 @@ flutter analyze
 flutter test
 ```
 
+GitHub Actions additionally runs Android encrypted-backup crash/restart
+integration tests on an emulator. See
+[Android recovery testing](docs/ANDROID_RECOVERY_TESTING.md) for coverage,
+local execution and the physical-device checklist.
+
 ## Builds
 
 ```bash
