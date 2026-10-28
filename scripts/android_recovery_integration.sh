@@ -10,11 +10,16 @@ LOG_DIR="${RUNNER_TEMP:-/tmp}/cash-tally-android-recovery"
 mkdir -p "$LOG_DIR"
 
 adb wait-for-device
+DEVICE_ID="$(adb devices | awk '$2 == "device" && $1 ~ /^emulator-/ { print $1; exit }')"
+if [[ -z "$DEVICE_ID" ]]; then
+  echo "ERROR: No Android emulator connected" >&2
+  exit 1
+fi
 
 drive_case() {
   local mode="$1"
   local checkpoint="${2:-}"
-  flutter drive \
+  flutter drive -d "$DEVICE_ID" \
     --no-pub \
     --driver=test_driver/integration_test.dart \
     --target=integration_test/android_backup_recovery_test.dart \
@@ -29,7 +34,7 @@ crash_at_checkpoint() {
 
   # The timeout also protects the runner if Flutter never attaches to VM service.
   timeout --signal=TERM --kill-after=10s 600s \
-    flutter drive \
+    flutter drive -d "$DEVICE_ID" \
       --no-pub \
       --driver=test_driver/integration_test.dart \
       --target=integration_test/android_backup_recovery_test.dart \
