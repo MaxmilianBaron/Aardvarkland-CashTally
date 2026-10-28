@@ -21,7 +21,7 @@ static-analysis and APK-build job, and the iOS build job, stay unchanged.
 
 The runner uses a **fresh driver invocation for each launch**, sharing the
 Android app sandbox between invocations. All runs use `flutter drive --keep-app-running`
-so Flutter does not clean up the installed package and its data between launches. The test process pauses immediately
+so the host runner controls process termination between launches. The test process pauses immediately
 after the selected persisted write; the host checks a flushed marker via
 `adb shell run-as` before terminating the **whole app process** using
 `am force-stop`. Merely throwing an exception or calling
@@ -35,6 +35,10 @@ Every driver invocation has a host-side timeout, including installation and
 VM-service connection. CI retains stage logs and emulator diagnostics for
 failed launches as well as completed tests. Set `CASH_TALLY_TEST_DEVICE` to
 select a specific disposable emulator when several are connected.
+Each launch stops the previous test process, archives and clears its log,
+and resets only that emulator's debugger forwards. The driver connects
+directly through a fixed local VM-service port, avoiding a stale proxy from
+a preceding forced termination.
 
 ## Run locally
 

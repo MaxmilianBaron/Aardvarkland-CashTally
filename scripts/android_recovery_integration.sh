@@ -27,14 +27,27 @@ collect_diagnostics() {
 }
 trap collect_diagnostics EXIT
 
+prepare_launch() {
+  local label="$1"
+  # A previous process and its debugger must not be mistaken for this launch.
+  # Preserve the preceding log before clearing only this disposable emulator.
+  timeout 20s "${ADB[@]}" shell am force-stop "$PACKAGE"
+  timeout 20s "${ADB[@]}" logcat -d -v threadtime >"$LOG_DIR/before-$label.log" 2>&1 || true
+  timeout 20s "${ADB[@]}" logcat -c
+  timeout 20s "${ADB[@]}" forward --remove-all
+}
+
 drive_case() {
   local mode="$1"
   local checkpoint="${2:-}"
+  prepare_launch "$mode${checkpoint:+-$checkpoint}"
   # This also bounds installation and VM-service connection, which are not
   # covered by Flutter's test timeout before the driver attaches.
   timeout --signal=TERM --kill-after=10s 600s \
     flutter drive -d "$DEVICE_ID" \
     --keep-app-running \
+    --no-dds \
+    --host-vmservice-port=8181 \
     --no-pub \
     --driver=test_driver/integration_test.dart \
     --target=integration_test/android_backup_recovery_test.dart \
@@ -47,11 +60,14 @@ crash_at_checkpoint() {
   local checkpoint="$1"
   local log="$LOG_DIR/crash-$checkpoint.log"
   echo "==> Android forced termination after: $checkpoint"
+  prepare_launch "crash-$checkpoint"
 
   # The timeout also protects the runner if Flutter never attaches to VM service.
   timeout --signal=TERM --kill-after=10s 600s \
     flutter drive -d "$DEVICE_ID" \
       --keep-app-running \
+      --no-dds \
+      --host-vmservice-port=8181 \
       --no-pub \
       --driver=test_driver/integration_test.dart \
       --target=integration_test/android_backup_recovery_test.dart \
@@ -85,8 +101,8 @@ crash_at_checkpoint() {
     return 1
   fi
 
-  # Keep the app installed between driver invocations. flutter drive without
-  # --keep-app-running performs cleanup which can uninstall application data.
+  # Keep process termination under the host runner's control between launches.
+  # --keep-app-running leaves the test app available for this explicit stop.
   # This is a real process termination, not tester.restartAndRestore() and
   # not a thrown exception inside Dart. Android app data must remain intact.
   timeout 20s "${ADB[@]}" shell am force-stop "$PACKAGE"
