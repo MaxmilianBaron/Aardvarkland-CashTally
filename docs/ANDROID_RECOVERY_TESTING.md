@@ -20,7 +20,8 @@ static-analysis and APK-build job, and the iOS build job, stay unchanged.
 | Both copies corrupted | App surfaces a recovery-required error and blocks subsequent writes instead of overwriting history |
 
 The runner uses a **fresh driver invocation for each launch**, sharing the
-Android app sandbox between invocations. The test process pauses immediately
+Android app sandbox between invocations. All runs use \`flutter drive --keep-app-running\`
+so Flutter does not clean up the installed package and its data between launches. The test process pauses immediately
 after the selected persisted write; the host checks a flushed marker via
 `adb shell run-as` before terminating the **whole app process** using
 `am force-stop`. Merely throwing an exception or calling
