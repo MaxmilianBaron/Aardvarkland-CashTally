@@ -78,8 +78,7 @@ crash_at_checkpoint() {
     echo "Driver did not exit after Android force-stop; terminating host runner."
     kill "$driver_pid" 2>/dev/null || true
   fi
-  local status=0
-  wait "$driver_pid" || status="$status" # overwritten below by explicit check
+  wait "$driver_pid" || true # VM-service disconnect is expected after force-stop
   # The authoritative success criteria are the durable marker and the next
   # independent process passing all data-integrity assertions.
   observed="$(adb shell run-as "$PACKAGE" cat "$MARKER" 2>/dev/null | tr -d '\r\n' || true)"
