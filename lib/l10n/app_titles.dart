@@ -1,0 +1,43 @@
+abstract final class AppTitles {
+  static const byLanguage = <String, String>{
+    'cs': 'Výčetka – uzávěrka pokladny',
+    'en': 'Cash Closing & Till Counter',
+    'de': 'Kassenabschluss & Geldzähler',
+    'fr': 'Clôture & comptage de caisse',
+    'it': 'Chiusura e conteggio cassa',
+    'nl': 'Kasafsluiting & geld tellen',
+    'bg': 'Касово приключване и брояч',
+    'hr': 'Obračun i brojanje blagajne',
+    'el': 'Κλείσιμο & μέτρηση ταμείου',
+    'et': 'Kassa sulgemine ja loendur',
+    'fi': 'Kassan sulku ja rahalaskuri',
+    'lv': 'Kases slēgšana un skaitīšana',
+    'lt': 'Kasos uždarymas ir apskaita',
+    'lb': 'Cash Closing & Till Counter',
+    'mt': 'Cash Closing & Till Counter',
+    'pt': 'Fecho e contagem de caixa',
+    'sk': 'Výčetka – uzávierka pokladne',
+    'sl': 'Zaključek in štetje blagajne',
+    'es': 'Cierre y conteo de caja',
+    'sv': 'Kassaavslut & kontanträknare',
+    'nb': 'Kasseoppgjør og kontantteller',
+    'uk': 'Закриття каси та підрахунок',
+    'ru': 'Закрытие кассы и подсчёт',
+    'da': 'Kasseafslutning og optælling',
+    'hu': 'Kasszazárás és pénzszámláló',
+    'pl': 'Zamknięcie kasy i licznik',
+    'tr': 'Kasa kapanışı ve para sayacı',
+    'id': 'Tutup kas & penghitung uang',
+    'hi': 'कैश क्लोज़िंग और गिनती',
+    'ms': 'Penutupan & kiraan tunai',
+    'th': 'ปิดยอดและนับเงินสด',
+    'ur': 'کیش بندش اور رقم شمار',
+    'ar': 'إغلاق الصندوق وعدّ النقد',
+    'he': 'סגירת קופה וספירת מזומן',
+    'ja': 'レジ締め・現金カウンター',
+    'ko': '금고 마감 및 현금 계산기',
+  };
+
+  static String forLanguage(String languageCode) =>
+      byLanguage[languageCode] ?? byLanguage['en']!;
+}
