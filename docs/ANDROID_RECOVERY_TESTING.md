@@ -20,7 +20,7 @@ static-analysis and APK-build job, and the iOS build job, stay unchanged.
 | Both copies corrupted | App surfaces a recovery-required error and blocks subsequent writes instead of overwriting history |
 
 The runner uses a **fresh driver invocation for each launch**, sharing the
-Android app sandbox between invocations. All runs use \`flutter drive --keep-app-running\`
+Android app sandbox between invocations. All runs use `flutter drive --keep-app-running`
 so Flutter does not clean up the installed package and its data between launches. The test process pauses immediately
 after the selected persisted write; the host checks a flushed marker via
 `adb shell run-as` before terminating the **whole app process** using
@@ -31,6 +31,10 @@ Test artifacts are synthetic; no real customer exports or signatures are used.
 Intentional app-driver disconnects during crash stages are expected. The CI
 job passes only when the selected marker was observed **and** the independent
 cold-start verification proves data completeness.
+Every driver invocation has a host-side timeout, including installation and
+VM-service connection. CI retains stage logs and emulator diagnostics for
+failed launches as well as completed tests. Set `CASH_TALLY_TEST_DEVICE` to
+select a specific disposable emulator when several are connected.
 
 ## Run locally
 

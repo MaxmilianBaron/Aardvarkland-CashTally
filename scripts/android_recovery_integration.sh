@@ -9,23 +9,38 @@ MARKER="app_flutter/cash_tally_android_it_checkpoint.txt"
 LOG_DIR="${RUNNER_TEMP:-/tmp}/cash-tally-android-recovery"
 mkdir -p "$LOG_DIR"
 
-adb wait-for-device
-DEVICE_ID="$(adb devices | awk '$2 == "device" && $1 ~ /^emulator-/ { print $1; exit }')"
-if [[ -z "$DEVICE_ID" ]]; then
+DEVICE_ID="${CASH_TALLY_TEST_DEVICE:-$(adb devices | awk '$2 == "device" && $1 ~ /^emulator-/ { print $1; exit }')}"
+if [[ "$DEVICE_ID" != emulator-* ]]; then
   echo "ERROR: No Android emulator connected" >&2
   exit 1
 fi
+ADB=(adb -s "$DEVICE_ID")
+timeout 60s "${ADB[@]}" wait-for-device
+
+collect_diagnostics() {
+  local status="$?"
+  trap - EXIT
+  timeout 20s "${ADB[@]}" logcat -d -v threadtime >"$LOG_DIR/logcat.log" 2>&1 || true
+  timeout 20s "${ADB[@]}" shell dumpsys activity activities >"$LOG_DIR/activities.log" 2>&1 || true
+  timeout 20s "${ADB[@]}" shell run-as "$PACKAGE" ls -la app_flutter/ >"$LOG_DIR/sandbox-files.log" 2>&1 || true
+  exit "$status"
+}
+trap collect_diagnostics EXIT
 
 drive_case() {
   local mode="$1"
   local checkpoint="${2:-}"
-  flutter drive -d "$DEVICE_ID" \
+  # This also bounds installation and VM-service connection, which are not
+  # covered by Flutter's test timeout before the driver attaches.
+  timeout --signal=TERM --kill-after=10s 600s \
+    flutter drive -d "$DEVICE_ID" \
     --keep-app-running \
     --no-pub \
     --driver=test_driver/integration_test.dart \
     --target=integration_test/android_backup_recovery_test.dart \
     "--dart-define=CASH_TALLY_IT_MODE=$mode" \
-    "--dart-define=CASH_TALLY_IT_CHECKPOINT=$checkpoint"
+    "--dart-define=CASH_TALLY_IT_CHECKPOINT=$checkpoint" \
+    2>&1 | tee "$LOG_DIR/$mode${checkpoint:+-$checkpoint}.log"
 }
 
 crash_at_checkpoint() {
@@ -51,7 +66,7 @@ crash_at_checkpoint() {
   # flushed on the Android sandbox. A crashed build that never reached the
   # desired stage cannot accidentally count as a successful kill.
   for _ in $(seq 1 240); do
-    observed="$(adb shell run-as "$PACKAGE" cat "$MARKER" 2>/dev/null | tr -d '\r\n' || true)"
+    observed="$(timeout 10s "${ADB[@]}" shell run-as "$PACKAGE" cat "$MARKER" 2>/dev/null | tr -d '\r\n' || true)"
     if [[ "$observed" == "$checkpoint" ]]; then
       ready=1
       break
@@ -74,7 +89,7 @@ crash_at_checkpoint() {
   # --keep-app-running performs cleanup which can uninstall application data.
   # This is a real process termination, not tester.restartAndRestore() and
   # not a thrown exception inside Dart. Android app data must remain intact.
-  adb shell am force-stop "$PACKAGE"
+  timeout 20s "${ADB[@]}" shell am force-stop "$PACKAGE"
   echo "Force-stopped $PACKAGE at $checkpoint"
 
   # flutter drive normally exits non-zero because the VM/service vanished.
@@ -90,11 +105,11 @@ crash_at_checkpoint() {
   wait "$driver_pid" || true # VM-service disconnect is expected after force-stop
   # The authoritative success criteria are the durable marker and the next
   # independent process passing all data-integrity assertions.
-  observed="$(adb shell run-as "$PACKAGE" cat "$MARKER" 2>/dev/null | tr -d '\r\n' || true)"
+  observed="$(timeout 10s "${ADB[@]}" shell run-as "$PACKAGE" cat "$MARKER" 2>/dev/null | tr -d '\r\n' || true)"
   if [[ "$observed" != "$checkpoint" ]]; then
     echo "ERROR: checkpoint marker disappeared after force-stop" >&2
-    adb shell pm path "$PACKAGE" >&2 || true
-    adb shell run-as "$PACKAGE" ls -la app_flutter/ >&2 || true
+    "${ADB[@]}" shell pm path "$PACKAGE" >&2 || true
+    "${ADB[@]}" shell run-as "$PACKAGE" ls -la app_flutter/ >&2 || true
     tail -n 100 "$log" >&2 || true
     return 1
   fi
