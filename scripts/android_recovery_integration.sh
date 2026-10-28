@@ -20,6 +20,7 @@ drive_case() {
   local mode="$1"
   local checkpoint="${2:-}"
   flutter drive -d "$DEVICE_ID" \
+    --keep-app-running \
     --no-pub \
     --driver=test_driver/integration_test.dart \
     --target=integration_test/android_backup_recovery_test.dart \
@@ -35,6 +36,7 @@ crash_at_checkpoint() {
   # The timeout also protects the runner if Flutter never attaches to VM service.
   timeout --signal=TERM --kill-after=10s 600s \
     flutter drive -d "$DEVICE_ID" \
+      --keep-app-running \
       --no-pub \
       --driver=test_driver/integration_test.dart \
       --target=integration_test/android_backup_recovery_test.dart \
@@ -68,6 +70,8 @@ crash_at_checkpoint() {
     return 1
   fi
 
+  # Keep the app installed between driver invocations. flutter drive without
+  # --keep-app-running performs cleanup which can uninstall application data.
   # This is a real process termination, not tester.restartAndRestore() and
   # not a thrown exception inside Dart. Android app data must remain intact.
   adb shell am force-stop "$PACKAGE"
@@ -89,6 +93,8 @@ crash_at_checkpoint() {
   observed="$(adb shell run-as "$PACKAGE" cat "$MARKER" 2>/dev/null | tr -d '\r\n' || true)"
   if [[ "$observed" != "$checkpoint" ]]; then
     echo "ERROR: checkpoint marker disappeared after force-stop" >&2
+    adb shell pm path "$PACKAGE" >&2 || true
+    adb shell run-as "$PACKAGE" ls -la app_flutter/ >&2 || true
     tail -n 100 "$log" >&2 || true
     return 1
   fi
